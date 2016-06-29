@@ -28,11 +28,10 @@ class Arrow extends Component {
         if(this.props.lifecycle === LC_WAITING){
           let dx = e.nativeEvent.pageX - this.initialPageX;
           let dy = e.nativeEvent.pageY - this.initialPageY;
-          this.xOut = this.xIn + dx;
-          this.yOut = this.yIn + dy;
 
-          const angle = Math.atan2(this.yOut - this.yIn, this.xOut - this.xIn) * 180 / Math.PI;
-          this.props.onStart(angle + 90);
+          const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+          this.props.onStart(angle-90, dy);
 
           this.initialPageX = null;
           this.initialPageY = null;

@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import {AppRegistry,StyleSheet,Text,View,Dimensions,AsyncStorage } from 'react-native';
 import Arrow from './components/Arrow';
 import Target from './components/Target';
-import Score from './components/Score';
+import Detail from './components/Detail';
 
 //window dimensions
 const WINDOW_HEIGHT = Dimensions.get('window').height;
@@ -13,7 +13,7 @@ const TARGET_Y = WINDOW_HEIGHT - 180;
 const TARGET_X = (WINDOW_WIDTH / 2) - TARGET_RADIUS;
 //arrow dimensions
 const length = 24;
-const BOW_Y = 11;
+const BOW_Y = 36;
 // arrow lifecycle
 const LC_WAITING = 0;
 const LC_STARTING = 1;
@@ -33,6 +33,7 @@ class Archery extends Component {
       scored: null,
       score: 0
     };
+    this.generateWind(this.state);
     AsyncStorage.getItem('highScore',(e,d)=>{
       let nextState = null;
       nextState = Object.assign({}, this.state);
@@ -56,6 +57,7 @@ class Archery extends Component {
     let nextState = null;
     nextState = Object.assign({}, this.state);
     this.updatePosition(nextState);
+    //this.updateVelocity(nextState);
 
     this.handleCollision(nextState);
     this.handleRestart(nextState);
@@ -66,6 +68,11 @@ class Archery extends Component {
   updatePosition(nextState) {
     nextState.x = this.state.x + nextState.vx;
     nextState.y = this.state.y + nextState.vy;
+  }
+
+  updateVelocity(nextState){
+    nextState.vx += Math.sin(this.state.windAngle * Math.PI / 180) * this.state.windSpeed/1000;
+    nextState.vy += Math.cos(this.state.windAngle * Math.PI / 180) * this.state.windSpeed/1000;
   }
 
   handleCollision(nextState){
@@ -105,13 +112,14 @@ class Archery extends Component {
     state.vy = 6;
     state.vx = 0;
     state.lifecycle = LC_WAITING;
+    this.generateWind(state);
   }
 
-  onStart(angle) {
+  onStart(angle,dy) {
     if (this.state.lifecycle === LC_WAITING) {
       this.setState({
-        vx: angle * 0.2,
-        vy: 6,
+        vx: angle * .2,
+        vy: dy/5,
         lifecycle: LC_STARTING,
       });
     }
@@ -123,13 +131,18 @@ class Archery extends Component {
     }else{
       return (
         <View style={styles.container}>
-        <Score score={this.state.score} highScore={this.state.highScore} />
+        <Detail score={this.state.score} highScore={this.state.highScore} windSpeed={this.state.windSpeed} windAngle={this.state.windAngle}/>
         <Target y={TARGET_Y} x={TARGET_X} radius={TARGET_RADIUS} />
         <Arrow onStart={this.onStart.bind(this)} lifecycle={this.state.lifecycle}
         x={this.state.x} y={this.state.y} length={length} />
         </View>
       );
     }
+  }
+
+  generateWind(state){
+    state.windSpeed = Math.floor(Math.random()*100);
+    state.windAngle = Math.floor(Math.random()*360);
   }
 
 }
