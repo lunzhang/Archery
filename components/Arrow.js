@@ -1,51 +1,92 @@
 import React, { Component,PropTypes } from 'react';
-import {StyleSheet,Text,View,Dimensions,TouchableOpacity,Image} from 'react-native';
+import {StyleSheet,Text,View,Dimensions,Image,PanResponder} from 'react-native';
 
+//window dimensions
+const WINDOW_HEIGHT = Dimensions.get('window').height;
+const WINDOW_WIDTH = Dimensions.get('window').width;
+//arrow dimensions
+const length = 24;
+const BOW_X = WINDOW_WIDTH / 2 - (length / 2);
+const BOW_Y = WINDOW_HEIGHT*4/5;
+// arrow lifecycle
 const LC_WAITING = 0;
+const LC_STARTING = 1;
 
 class Arrow extends Component {
 
   constructor(props) {
     super(props);
-    this.xIn = null;
-    this.yIn = null;
-    this.xOut = null;
-    this.yOut = null;
+    this.state={
+      rotate:0,
+      x:BOW_X,
+      y:BOW_Y
+    };
+    this.panResponder = PanResponder.create({
+      onStartShouldSetPanResponder: (evt, gestureState) => true,
+      onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => true,
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
+      onPanResponderGrant: (e, gestureState) => {
+
+      },
+      onPanResponderMove: (e, gestureState) => {
+        if(this.props.lifecycle === LC_WAITING){
+          let nextState = null;
+          nextState = Object.assign({}, this.state);
+          this.pull(nextState,gestureState);
+          this.rotate(nextState,gestureState.moveX,gestureState.moveY);
+          this.setState(nextState);
+        }
+      },
+      onPanResponderRelease: (e, gestureState) => {
+        if(this.props.lifecycle === LC_WAITING){
+          this.props.onStart(this.state.rotate, gestureState.dy);
+        }
+      },
+    });
+  }
+
+  rotate(nextState,x,y){
+    let dx = x - BOW_X - this.props.length/2 ;
+    let dy = BOW_Y - y;
+    let angle = Math.atan2(dx,dy) * 180 / Math.PI;
+    nextState.rotate = angle-180;
+  }
+
+  pull(nextState,gestureState){
+    if(gestureState.dy > 0 && gestureState.dy < 50){
+      nextState.y = BOW_Y + gestureState.dy;
+    }
+  }
+
+  updatePosition(state){
+    let nextState = null;
+    nextState = Object.assign({}, this.state);
+    nextState.x = this.state.x + state.vx;
+    nextState.y = this.state.y + state.vy;
+    this.setState(nextState);
+  }
+
+  restart(){
+    this.setState({
+      rotate:0,
+      x:BOW_X,
+      y:BOW_Y
+    });
   }
 
   render() {
     return (
-      <TouchableOpacity activeOpacity={1}
-      onPressIn={(e) => {
-        if(this.props.lifecycle === LC_WAITING){
-          this.xIn = e.nativeEvent.locationX;
-          this.yIn = e.nativeEvent.locationY;
-          this.initialPageY = e.nativeEvent.pageY;
-          this.initialPageX = e.nativeEvent.pageX;
-        }
-      }}
-      onPressOut={(e) => {
-        if(this.props.lifecycle === LC_WAITING){
-          let dx = e.nativeEvent.pageX - this.initialPageX;
-          let dy = e.nativeEvent.pageY - this.initialPageY;
-
-          const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-          this.props.onStart(angle-90, dy);
-
-          this.initialPageX = null;
-          this.initialPageY = null;
-          this.xIn = null;
-          this.yIn = null;
-          this.xOut = null;
-          this.yOut = null;
-        }
-      }}
+      <View
+      {...this.panResponder.panHandlers}
       style={[styles.arrowContainer, {
         width: this.props.length,
         height: this.props.length * 1.5,
-        left: this.props.x,
-        bottom: this.props.y,
+        left: this.state.x,
+        top: this.state.y,
+        transform:[
+          {rotate:this.state.rotate + 'deg'}
+        ]
       }]}>
       <Image
       renderToHardwareTextureAndroid
@@ -55,9 +96,10 @@ class Arrow extends Component {
         backgroundColor: 'transparent'
       }]}
       />
-      </TouchableOpacity>
+      </View>
     );
   }
+
 }
 
 const styles = StyleSheet.create({

@@ -9,7 +9,7 @@ class Target extends Component{
     return (
       <View style={[styles.targetContainer, {
         left: this.props.x,
-        bottom: this.props.y,
+        top: this.props.y,
         height: this.props.radius * 2,
         width: this.props.radius * 2
       }]}
